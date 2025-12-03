@@ -102,6 +102,7 @@ def read_image_from_base64(image_b64: str):
         # Strip data URL header if present
         try:
             image_b64 = image_b64.split(",", 1)[1]
+            image_b64 = image_b64.replace("\n", "").replace("\r", "").strip()
         except IndexError as exc:
             raise ValueError("Invalid data URL format") from exc
 
