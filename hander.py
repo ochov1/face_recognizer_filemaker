@@ -125,10 +125,16 @@ def read_image(image_input):
     if not isinstance(image_input, str):
         raise ValueError("Image input must be a string or list of strings")
 
+    # Explicitly handle data URLs
+    if image_input.startswith("data:"):
+        return read_image_from_base64(image_input)
+
     parsed = urlparse(image_input)
-    if parsed.scheme in ("http", "https"):
+    # Only treat as URL when we have both scheme and netloc
+    if parsed.scheme in ("http", "https") and parsed.netloc:
         return read_image_from_url(image_input)
 
+    # Fallback: try to decode as base64 (raw string or malformed URL)
     return read_image_from_base64(image_input)
 
 def parse_insightface_output(output):
