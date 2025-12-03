@@ -5,7 +5,7 @@ WORKDIR /
 
 # Copiamos la API
 COPY api.py /api.py
-
+COPY handler.py /handler.py
 
 ENTRYPOINT []
 # Instalamos FastAPI + Uvicorn
