@@ -186,3 +186,4 @@ def handler(event):
     return result
 
 if __name__ == "__main__":
+    pass
