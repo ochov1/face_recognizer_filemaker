@@ -21,7 +21,7 @@ class RobustFaceEmbedding:
     def __init__(self):
         self.insightface_model = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         # Lower det_thresh for harder images and keep reasonable det_size
-        self.insightface_model.prepare(ctx_id=0, det_size=(640, 640), det_thresh=0.25)
+        self.insightface_model.prepare(ctx_id=0, det_size=(160, 160), det_thresh=0.25)
         self.facenet_model = InceptionResnetV1(pretrained='vggface2').eval()
 
     def _log_image_debug(self, image, stage="input"):
