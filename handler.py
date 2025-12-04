@@ -6,6 +6,7 @@ import runpod
 import torch
 import requests
 import logging
+import os
 from urllib.parse import urlparse
 
 from insightface.app import FaceAnalysis
@@ -88,9 +89,26 @@ class RobustFaceEmbedding:
             # Prepare image for InsightFace
             faces = self.insightface_model.get(image)
             logger.debug("InsightFace detected %s faces", len(faces))
+            if faces:
+                try:
+                    logger.debug("First face det_score=%s bbox=%s", faces[0].det_score, faces[0].bbox)
+                except Exception:
+                    logger.debug("Could not log first face details")
             if not faces:
+                saved_path = None
+                failed_dir = os.getenv("FAILED_FACE_DIR")
+                if failed_dir:
+                    try:
+                        os.makedirs(failed_dir, exist_ok=True)
+                        filename = f"no_face_detected_{int(torch.randint(0, 1_000_000, (1,)).item())}.jpg"
+                        saved_path = os.path.join(failed_dir, filename)
+                        cv2.imwrite(saved_path, image)
+                        logger.warning("Saved failed detection image to %s", saved_path)
+                    except Exception as exc:
+                        logger.warning("Could not save failed image to %s: %s", failed_dir, exc)
+                extra = f"; saved={saved_path}" if saved_path else ""
                 raise ValueError(
-                    f"No face detected in the image; shape={image.shape}, dtype={image.dtype}"
+                    f"No face detected in the image; shape={image.shape}, dtype={image.dtype}{extra}"
                 )
 
             insightface_embedding = faces[0].embedding
