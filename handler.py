@@ -83,10 +83,7 @@ class RobustFaceEmbedding:
             # Upscale tiny inputs so the detector sees more detail
             h, w = image.shape[:2]
             
-            if max(h, w) < 640:
-                logger.debug("Upscaling small image from (%s, %s) to (640, 640)", h, w)
-                image = cv2.resize(image, (640, 640), interpolation=cv2.INTER_CUBIC)
-                self._log_image_debug(image, "upsized")
+
 
             # Prepare image for InsightFace
             faces = self.insightface_model.get(image)
