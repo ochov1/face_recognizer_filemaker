@@ -19,7 +19,8 @@ if not logger.handlers:
 class RobustFaceEmbedding:
     def __init__(self):
         self.insightface_model = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
-        self.insightface_model.prepare(ctx_id=0, det_size=(640, 640))
+        # Lower det_thresh for harder images and keep reasonable det_size
+        self.insightface_model.prepare(ctx_id=0, det_size=(640, 640), det_thresh=0.25)
         self.facenet_model = InceptionResnetV1(pretrained='vggface2').eval()
 
     def _log_image_debug(self, image, stage="input"):
@@ -94,6 +95,15 @@ class RobustFaceEmbedding:
                     logger.debug("First face det_score=%s bbox=%s", faces[0].det_score, faces[0].bbox)
                 except Exception:
                     logger.debug("Could not log first face details")
+            if not faces:
+                # Fallback 1: try detection on RGB in case source channel order is off
+                try:
+                    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                    faces = self.insightface_model.get(image_rgb)
+                    logger.debug("Fallback RGB detection found %s faces", len(faces))
+                except Exception as exc:
+                    logger.debug("Fallback RGB detection failed: %s", exc)
+
             if not faces:
                 saved_path = None
                 failed_dir = os.getenv("FAILED_FACE_DIR")
