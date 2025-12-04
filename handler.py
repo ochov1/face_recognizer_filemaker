@@ -14,7 +14,8 @@ from facenet_pytorch import InceptionResnetV1
 
 logger = logging.getLogger(__name__)
 if not logger.handlers:
-    logging.basicConfig(level=logging.DEBUG)
+    # force=True ensures our config applies even if another logger was set up first
+    logging.basicConfig(level=logging.DEBUG, force=True)
 
 class RobustFaceEmbedding:
     def __init__(self):
