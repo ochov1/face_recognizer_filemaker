@@ -13,7 +13,7 @@ from facenet_pytorch import InceptionResnetV1
 class RobustFaceEmbedding:
     def __init__(self):
         self.insightface_model = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
-        self.insightface_model.prepare(ctx_id=0, det_size=(160, 640))
+        self.insightface_model.prepare(ctx_id=0, det_size=(640, 640))
         self.facenet_model = InceptionResnetV1(pretrained='vggface2').eval()
 
     def get_combined_embedding(self, image):
