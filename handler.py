@@ -55,6 +55,7 @@ class RobustFaceEmbedding:
 
             # Upscale tiny inputs so the detector sees more detail
             h, w = image.shape[:2]
+            
             if max(h, w) < 640:
                 image = cv2.resize(image, (640, 640), interpolation=cv2.INTER_CUBIC)
 
