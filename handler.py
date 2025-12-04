@@ -70,7 +70,7 @@ class RobustFaceEmbedding:
                 import time
                 timestamp = int(time.time() * 1000)
                 failed_image_path = os.path.join(debug_dir, f"no_face_detected_{timestamp}.jpg")
-                cv2.imwrite(failed_image_path, image)
+                cv2.imwrite(failed_image_path, image) # Save the image before raising the error
                 raise ValueError(f"No face detected in the image. The problematic image has been saved to: {failed_image_path}")
 
             insightface_embedding = faces[0].embedding
