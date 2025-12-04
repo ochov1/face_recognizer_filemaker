@@ -13,7 +13,7 @@ from facenet_pytorch import InceptionResnetV1
 class RobustFaceEmbedding:
     def __init__(self):
         self.insightface_model = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
-        self.insightface_model.prepare(ctx_id=0, det_size=(640, 640))
+        self.insightface_model.prepare(ctx_id=0, det_size=(160, 640))
         self.facenet_model = InceptionResnetV1(pretrained='vggface2').eval()
 
     def get_combined_embedding(self, image):
@@ -52,6 +52,11 @@ class RobustFaceEmbedding:
             # Ensure image is numpy array
             if not isinstance(image, np.ndarray):
                 raise ValueError("Input image must be a numpy array")
+
+            # Upscale tiny inputs so the detector sees more detail
+            h, w = image.shape[:2]
+            if max(h, w) < 640:
+                image = cv2.resize(image, (640, 640), interpolation=cv2.INTER_CUBIC)
 
             # Prepare image for InsightFace
             faces = self.insightface_model.get(image)
