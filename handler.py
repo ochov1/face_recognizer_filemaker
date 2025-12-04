@@ -2,20 +2,39 @@ import base64
 import binascii
 import cv2
 import numpy as np
-import os
 import runpod
 import torch
 import requests
+import logging
 from urllib.parse import urlparse
 
 from insightface.app import FaceAnalysis
 from facenet_pytorch import InceptionResnetV1
+
+logger = logging.getLogger(__name__)
+if not logger.handlers:
+    logging.basicConfig(level=logging.DEBUG)
 
 class RobustFaceEmbedding:
     def __init__(self):
         self.insightface_model = FaceAnalysis(providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
         self.insightface_model.prepare(ctx_id=0, det_size=(640, 640))
         self.facenet_model = InceptionResnetV1(pretrained='vggface2').eval()
+
+    def _log_image_debug(self, image, stage="input"):
+        """Log useful stats about the image without raising new errors."""
+        try:
+            logger.debug(
+                "%s image stats: shape=%s dtype=%s min=%.1f max=%.1f mean=%.1f",
+                stage,
+                getattr(image, "shape", None),
+                getattr(image, "dtype", None),
+                float(image.min()),
+                float(image.max()),
+                float(image.mean()),
+            )
+        except Exception as exc:  # best-effort logging
+            logger.debug("Failed to log image stats at %s: %s", stage, exc)
 
     def get_combined_embedding(self, image):
         """Get combined embedding from both models with optional caching."""
@@ -53,25 +72,26 @@ class RobustFaceEmbedding:
             # Ensure image is numpy array
             if not isinstance(image, np.ndarray):
                 raise ValueError("Input image must be a numpy array")
+            if image.size == 0:
+                raise ValueError("Input image is empty (size=0)")
+
+            self._log_image_debug(image, "raw")
 
             # Upscale tiny inputs so the detector sees more detail
             h, w = image.shape[:2]
             
             if max(h, w) < 640:
+                logger.debug("Upscaling small image from (%s, %s) to (640, 640)", h, w)
                 image = cv2.resize(image, (640, 640), interpolation=cv2.INTER_CUBIC)
+                self._log_image_debug(image, "upsized")
 
             # Prepare image for InsightFace
             faces = self.insightface_model.get(image)
+            logger.debug("InsightFace detected %s faces", len(faces))
             if not faces:
-                raise ValueError("No face detected in the image")
-                # Save the image that failed detection for debugging purposes.
-                debug_dir = os.path.join(os.path.expanduser("~"), "failed_detections")
-                os.makedirs(debug_dir, exist_ok=True)
-                import time
-                timestamp = int(time.time() * 1000)
-                failed_image_path = os.path.join(debug_dir, f"no_face_detected_{timestamp}.jpg")
-                cv2.imwrite(failed_image_path, image) # Save the image before raising the error
-                raise ValueError(f"No face detected in the image. The problematic image has been saved to: {failed_image_path}")
+                raise ValueError(
+                    f"No face detected in the image; shape={image.shape}, dtype={image.dtype}"
+                )
 
             insightface_embedding = faces[0].embedding
             # Prepare image for FaceNet
@@ -102,6 +122,7 @@ class RobustFaceEmbedding:
             return combined_embedding
 
         except Exception as e:
+            logger.exception("Error computing embedding")
             raise ValueError(f"Error computing embedding: {str(e)}")
 
 def read_image_from_url(image_url: str):
