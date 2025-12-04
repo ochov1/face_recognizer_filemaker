@@ -2,6 +2,7 @@ import base64
 import binascii
 import cv2
 import numpy as np
+import os
 import runpod
 import torch
 import requests
@@ -63,6 +64,14 @@ class RobustFaceEmbedding:
             faces = self.insightface_model.get(image)
             if not faces:
                 raise ValueError("No face detected in the image")
+                # Save the image that failed detection for debugging purposes.
+                debug_dir = os.path.join(os.path.expanduser("~"), "failed_detections")
+                os.makedirs(debug_dir, exist_ok=True)
+                import time
+                timestamp = int(time.time() * 1000)
+                failed_image_path = os.path.join(debug_dir, f"no_face_detected_{timestamp}.jpg")
+                cv2.imwrite(failed_image_path, image)
+                raise ValueError(f"No face detected in the image. The problematic image has been saved to: {failed_image_path}")
 
             insightface_embedding = faces[0].embedding
             # Prepare image for FaceNet
